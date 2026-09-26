@@ -1,0 +1,37 @@
+{
+  "engines" : {
+    "node" : "22.20.0"
+
+  },
+  "name": "wanderlust-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch-path=app.js --watch-path=routes --watch-path=models --watch-path=middleware.js app.js",
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mapbox/mapbox-sdk": "^0.16.2",
+    "cloudinary": "^2.9.0",
+    "connect-flash": "^0.1.1",
+    "connect-mongo": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "ejs": "^3.1.10",
+    "ejs-mate": "^4.0.0",
+    "express": "^5.1.0",
+    "express-session": "^1.19.0",
+    "joi": "^18.0.2",
+    "method-override": "^3.0.0",
+    "mongoose": "^8.19.0",
+    "multer": "^2.1.1",
+    "multer-storage-cloudinary": "^2.2.1",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^9.0.1"
+  }
+}
