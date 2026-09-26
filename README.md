@@ -1,5 +1,6 @@
 # 🌍 Wanderlust — Full-Stack Vacation Rental Platform
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-black?logo=vercel&logoColor=white)](https://wanderlust-six-vert.vercel.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -8,6 +9,8 @@
 [![Mapbox](https://img.shields.io/badge/Mapbox-GL-000000?logo=mapbox&logoColor=white)](https://www.mapbox.com/)
 [![Cloudinary](https://img.shields.io/badge/Cloudinary-Image_Storage-3448C5?logo=cloudinary&logoColor=white)](https://cloudinary.com/)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
+🌐 **Live Demo:** [https://wanderlust-six-vert.vercel.app](https://wanderlust-six-vert.vercel.app)
 
 **Wanderlust** is an Airbnb-inspired full-stack vacation rental and accommodation marketplace. It allows travelers to discover unique stays worldwide and enables hosts to list and manage their properties. Built with a modern **React (Vite) Single Page Application** on the frontend and an **Express.js + MongoDB** REST API on the backend, featuring Cloudinary cloud image uploads and interactive Mapbox geocoding.
 
