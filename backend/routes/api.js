@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
+const os = require("os");
+const fs = require("fs");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: os.tmpdir() });
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
 const cloudinary = require("../cloudConfig");
 const Listing = require("../models/listing.js");
@@ -167,6 +169,8 @@ router.post("/listings", isLoggedIn, upload.single("image"), wrapAsync(async (re
             image = { url: result.secure_url, filename: result.public_id };
         } catch (cloudErr) {
             console.warn("Cloudinary upload failed:", cloudErr.message);
+        } finally {
+            fs.unlink(req.file.path, () => {});
         }
     } else if (listingData.image) {
         const imgUrl = typeof listingData.image === "object" ? listingData.image.url : listingData.image;
@@ -205,6 +209,8 @@ router.put("/listings/:id", isLoggedIn, isOwner, upload.single("image"), wrapAsy
             updateFields.image = { url: result.secure_url, filename: result.public_id };
         } catch (cloudErr) {
             console.warn("Cloudinary upload failed:", cloudErr.message);
+        } finally {
+            fs.unlink(req.file.path, () => {});
         }
     } else if (listingData.image) {
         const imgUrl = typeof listingData.image === "object" ? listingData.image.url : listingData.image;

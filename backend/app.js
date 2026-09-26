@@ -15,22 +15,37 @@ const apiRouter = require("./routes/api.js");
 
 const dbUrl = process.env.ATLASDB_URL || "mongodb://127.0.0.1:27017/wanderlust";
 
-main()
-  .then(() => {
-    console.log("Connected to DB");
-  })
-  .catch((err) => {
-    console.error("DB Connection Error:", err.message);
-  });
-
-async function main() {
+let isConnected = false;
+async function connectDB() {
+  if (isConnected || mongoose.connection.readyState >= 1) return;
   await mongoose.connect(dbUrl);
+  isConnected = true;
+  console.log("Connected to DB");
 }
+
+connectDB().catch((err) => {
+  console.error("DB Connection Error:", err.message);
+});
+
+// Trust reverse proxy (essential for Vercel & HTTPS secure cookies)
+app.set("trust proxy", 1);
+
+// Middleware: ensure database connection is active in serverless environments
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState < 1) {
+    try {
+      await connectDB();
+    } catch (err) {
+      return res.status(500).json({ error: "Database connection failed" });
+    }
+  }
+  next();
+});
 
 // CORS Middleware (handles credentials & preflight requests for React frontend)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && (origin.includes("localhost") || origin.includes("127.0.0.1"))) {
+  if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -59,6 +74,8 @@ store.on("error", (err) => {
   console.error("ERROR in MONGO SESSION STORE", err);
 });
 
+const isProd = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+
 const sessionOptions = {
   store,
   secret: process.env.SECRET || "wanderlustsecretkey",
@@ -69,6 +86,7 @@ const sessionOptions = {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: "lax",
+    secure: isProd,
   },
 };
 
@@ -109,6 +127,11 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+// Only start listening when not running inside a serverless platform (Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;

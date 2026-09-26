@@ -202,7 +202,34 @@ npm run dev
 ```
 
 Visit the frontend in your browser:
-👉 **[http://localhost:5173](http://localhost:5173)** (or `http://localhost:5174`)
+---
+
+## ⚡ Deployment to Vercel
+
+The project is configured for 1-click deployment on [Vercel](https://vercel.com/) via `vercel.json` and `api/index.js` (Serverless Node.js backend + Vite React SPA frontend).
+
+### Steps to Deploy:
+
+1. **Push your code to GitHub** (already set up on `main` branch).
+2. Go to **[vercel.com](https://vercel.com/)** and log in with your GitHub account.
+3. Click **"Add New..."** ➔ **"Project"**.
+4. Import your **`Wanderlust`** repository from GitHub.
+5. In the **Configure Project** screen:
+   - **Framework Preset:** Vite (or Other)
+   - **Root Directory:** `./` (leave default)
+   - **Build and Output Settings:** Automatically managed by `vercel.json`
+6. Expand **Environment Variables** and add the following keys:
+   | Variable | Value Description |
+   | :--- | :--- |
+   | `ATLASDB_URL` | Your MongoDB Atlas connection URI (`mongodb+srv://...`) |
+   | `SECRET` | Long random session secret key |
+   | `CLOUD_NAME` | Cloudinary cloud name |
+   | `CLOUD_API_KEY` | Cloudinary API key |
+   | `CLOUD_API_SECRET` | Cloudinary API secret |
+   | `MAP_TOKEN` | Public Mapbox access token |
+   | `NODE_ENV` | `production` |
+7. Click **"Deploy"**!
+8. Once deployed, Vercel provides a live URL (e.g., `https://wanderlust-yourname.vercel.app`).
 
 ---
 
