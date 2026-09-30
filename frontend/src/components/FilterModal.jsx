@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 
 export default function FilterModal({ isOpen, onClose, minPrice, setMinPrice, maxPrice, setMaxPrice, onApply }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleClear = () => {
@@ -29,7 +39,7 @@ export default function FilterModal({ isOpen, onClose, minPrice, setMinPrice, ma
               Nightly prices before taxes and fees
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="filter-modal-price-grid">
               <div className="airbnb-input-group">
                 <label>Minimum (&#8377;)</label>
                 <input
@@ -84,7 +94,7 @@ export default function FilterModal({ isOpen, onClose, minPrice, setMinPrice, ma
           {/* Amenities */}
           <div style={{ padding: '1.5rem 0' }}>
             <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>Amenities</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="filter-modal-amenities-grid">
               {['Wifi', 'Kitchen', 'Free parking', 'Air conditioning', 'Pool', 'Dedicated workspace'].map((am) => (
                 <label key={am} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" style={{ width: '18px', height: '18px', accentColor: '#222' }} />

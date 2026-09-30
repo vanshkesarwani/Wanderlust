@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
-export default function ListingCard({ listing, showTaxes }) {
+export default function ListingCard({ listing, showTaxes, isNewListing = false }) {
   const [liked, setLiked] = useState(false);
+  const toast = useToast();
 
   const basePrice = listing.price || 0;
   const priceWithTax = Math.round(basePrice * 1.18);
@@ -10,16 +12,37 @@ export default function ListingCard({ listing, showTaxes }) {
   const handleHeartClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setLiked(!liked);
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    toast.wishlist(listing.title, nextLiked);
   };
 
   // Generate stable mock distance / dates for Airbnb realism
   const seed = (listing._id || '1').charCodeAt(0);
   const distance = ((seed * 17) % 2500) + 120;
-  const isGuestFav = seed % 3 === 0;
+  const isGuestFav = !isNewListing && seed % 3 === 0;
+  const isRareFind = !isNewListing && !isGuestFav && seed % 5 === 0;
+
+  // Travel tag based on characteristics
+  const titleLower = (listing.title || '').toLowerCase();
+  const travelVibe = isNewListing
+    ? '✨ Just Listed'
+    : isGuestFav
+    ? '🏆 Guest Favourite'
+    : titleLower.includes('beach') || titleLower.includes('ocean') || titleLower.includes('sea')
+    ? '🏖️ Beachfront'
+    : titleLower.includes('mountain') || titleLower.includes('hill') || titleLower.includes('ski')
+    ? '🏔️ Mountain View'
+    : titleLower.includes('villa') || titleLower.includes('mansion')
+    ? '👑 Luxury Villa'
+    : titleLower.includes('cabin') || titleLower.includes('cottage')
+    ? '🌲 Cozy Cabin'
+    : isRareFind
+    ? '💎 Rare Find'
+    : null;
 
   return (
-    <Link to={`/listings/${listing._id}`} className="airbnb-card">
+    <Link to={`/listings/${listing._id}`} className="airbnb-card wanderlust-stay-card">
       <div className="airbnb-card-media">
         <img
           src={listing.image?.url || 'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b'}
@@ -27,13 +50,19 @@ export default function ListingCard({ listing, showTaxes }) {
           loading="lazy"
         />
 
-        {/* Guest favourite pill badge */}
-        {isGuestFav && (
-          <div className="guest-fav-badge">
-            <i className="fa-solid fa-trophy" style={{ fontSize: '0.7rem' }}></i>
-            <span>Guest favourite</span>
+        {/* Dynamic Wanderlust Travel Badge */}
+        {travelVibe && (
+          <div className={`guest-fav-badge ${isNewListing ? 'just-listed-pill' : travelVibe.includes('💎') ? 'rare-find-pill' : ''}`}>
+            <span>{travelVibe}</span>
           </div>
         )}
+
+        {/* Photo indicator dots on media hover */}
+        <div className="card-media-dots">
+          <span className="dot active"></span>
+          <span className="dot"></span>
+          <span className="dot"></span>
+        </div>
 
         {/* Favorite Heart Button */}
         <button

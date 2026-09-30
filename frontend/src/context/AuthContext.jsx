@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [redirectPath, setRedirectPath] = useState(null);
 
   const checkAuth = async () => {
     try {
@@ -43,13 +44,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const openAuthModal = (mode = 'login') => {
+  const openAuthModal = (mode = 'login', redirect = null) => {
     setAuthMode(mode);
+    setRedirectPath(redirect);
     setAuthModalOpen(true);
   };
 
   const closeAuthModal = () => {
     setAuthModalOpen(false);
+    setRedirectPath(null);
   };
 
   return (
@@ -63,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         checkAuth,
         authModalOpen,
         authMode,
+        redirectPath,
         openAuthModal,
         closeAuthModal,
         setAuthMode

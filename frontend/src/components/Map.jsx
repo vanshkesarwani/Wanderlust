@@ -1,21 +1,24 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 
 export default function Map({ coordinates, location, country, mapToken }) {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const [tokenMissing, setTokenMissing] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
     const token = mapToken || import.meta.env.VITE_MAPBOX_TOKEN;
     if (!token) {
+      setTokenMissing(true);
       return;
     }
+    setTokenMissing(false);
     mapboxgl.accessToken = token;
 
     const coords = (coordinates && coordinates.length === 2 && !isNaN(coordinates[0]) && !isNaN(coordinates[1]))
       ? coordinates
-      : [77.2090, 28.6139]; // Default to Delhi coordinates
+      : [77.2090, 28.6139]; // Default coordinates
 
     try {
       map.current = new mapboxgl.Map({
@@ -43,6 +46,7 @@ export default function Map({ coordinates, location, country, mapToken }) {
 
     } catch (err) {
       console.warn("Mapbox initialization error:", err);
+      setTokenMissing(true);
     }
 
     return () => {
@@ -52,6 +56,20 @@ export default function Map({ coordinates, location, country, mapToken }) {
       }
     };
   }, [coordinates, location, country, mapToken]);
+
+  if (tokenMissing) {
+    return (
+      <div className="map-container fallback-map-view">
+        <div className="fallback-map-inner">
+          <div className="fallback-map-pin">
+            <i className="fa-solid fa-location-dot"></i>
+          </div>
+          <h4>{location || 'Scenic Stay Location'}, {country || 'World'}</h4>
+          <p>Exact retreat location and check-in instructions are shared upon reservation confirmation.</p>
+        </div>
+      </div>
+    );
+  }
 
   return <div ref={mapContainer} className="map-container" />;
 }

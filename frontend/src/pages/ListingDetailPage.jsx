@@ -1,22 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import Map from '../components/Map';
+import ConfirmModal from '../components/ConfirmModal';
+import ReservationSuccessModal from '../components/ReservationSuccessModal';
+import PhotoGalleryModal from '../components/PhotoGalleryModal';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, openAuthModal } = useAuth();
+  const toast = useToast();
 
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mapToken, setMapToken] = useState('');
   const [saved, setSaved] = useState(false);
+  const [showCreatedBanner, setShowCreatedBanner] = useState(Boolean(location.state?.justCreated));
+
+  // Modals state
+  const [deleteListingModal, setDeleteListingModal] = useState(false);
+  const [deleteReviewModal, setDeleteReviewModal] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState(null);
+  const [deletingListing, setDeletingListing] = useState(false);
+  const [deletingReview, setDeletingReview] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [reservationOpen, setReservationOpen] = useState(false);
 
   // Review state
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
@@ -52,13 +69,22 @@ export default function ListingDetailPage() {
     }
   };
 
-  const handleDeleteListing = async () => {
-    if (!window.confirm('Are you sure you want to delete this listing?')) return;
+  const handleDeleteListingClick = () => {
+    setDeleteListingModal(true);
+  };
+
+  const confirmDeleteListing = async () => {
+    setDeletingListing(true);
     try {
       await api.delete(`/listings/${id}`);
+      setDeleteListingModal(false);
+      toast.deleted(listing?.title || 'Listing');
       navigate('/');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete listing');
+      const msg = err.response?.data?.error || 'Failed to delete listing';
+      toast.error(msg);
+    } finally {
+      setDeletingListing(false);
     }
   };
 
@@ -78,31 +104,56 @@ export default function ListingDetailPage() {
       }));
       setComment('');
       setRating(5);
+      toast.success('Your review has been published for travelers to see!', 'Review Added ⭐');
     } catch (err) {
-      setReviewError(err.response?.data?.error || 'Failed to post review');
+      const msg = err.response?.data?.error || 'Failed to post review';
+      setReviewError(msg);
+      toast.error(msg);
     } finally {
       setSubmittingReview(false);
     }
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('Delete this review?')) return;
+  const handleDeleteReviewClick = (reviewId) => {
+    setSelectedReviewId(reviewId);
+    setDeleteReviewModal(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!selectedReviewId) return;
+    setDeletingReview(true);
     try {
-      await api.delete(`/listings/${id}/reviews/${reviewId}`);
+      await api.delete(`/listings/${id}/reviews/${selectedReviewId}`);
       setListing((prev) => ({
         ...prev,
-        reviews: prev.reviews.filter((r) => r._id !== reviewId)
+        reviews: prev.reviews.filter((r) => r._id !== selectedReviewId)
       }));
+      setDeleteReviewModal(false);
+      setSelectedReviewId(null);
+      toast.success('Your review was successfully removed.', 'Review Deleted 🗑️');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete review');
+      const msg = err.response?.data?.error || 'Failed to delete review';
+      toast.error(msg);
+    } finally {
+      setDeletingReview(false);
     }
   };
 
   const handleShare = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
-      alert('Listing link copied to clipboard!');
+      toast.success('Listing link copied to clipboard! Share it with your friends.', 'Link Copied 📋');
     }
+  };
+
+  const handleToggleSave = () => {
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    toast.wishlist(listing?.title || 'Retreat', nextSaved);
+  };
+
+  const handleReserve = () => {
+    setReservationOpen(true);
   };
 
   if (loading) {
@@ -145,6 +196,25 @@ export default function ListingDetailPage() {
 
   return (
     <div className="airbnb-show-container">
+      {/* Newly Listed Celebration Banner */}
+      {showCreatedBanner && (
+        <div className="just-listed-banner wanderlust-celebration-banner">
+          <div className="just-listed-banner-content">
+            <span className="banner-badge">🏖️ WANDERLUST HOSTING</span>
+            <span className="banner-text">
+              Congratulations! Your retreat <strong>"{listing.title}"</strong> is now live and accepting traveler bookings worldwide.
+            </span>
+          </div>
+          <button
+            className="banner-close-btn"
+            onClick={() => setShowCreatedBanner(false)}
+            aria-label="Dismiss banner"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      )}
+
       {/* Title & Actions Row */}
       <div className="show-header-top">
         <h1 className="show-title">{listing.title}</h1>
@@ -165,7 +235,7 @@ export default function ListingDetailPage() {
               <i className="fa-solid fa-arrow-up-from-bracket"></i>
               <span>Share</span>
             </button>
-            <button className="show-action-btn" onClick={() => setSaved(!saved)}>
+            <button className="show-action-btn" onClick={handleToggleSave}>
               <i className={saved ? "fa-solid fa-heart" : "fa-regular fa-heart"} style={{ color: saved ? '#ff385c' : 'inherit' }}></i>
               <span>{saved ? 'Saved' : 'Save'}</span>
             </button>
@@ -175,25 +245,25 @@ export default function ListingDetailPage() {
 
       {/* Iconic 5-Photo Airbnb Mosaic */}
       <div className="airbnb-photo-mosaic">
-        <div className="photo-mosaic-item main">
+        <div className="photo-mosaic-item main" onClick={() => setGalleryOpen(true)}>
           <img src={galleryPhotos[0]} alt={listing.title} />
         </div>
-        <div className="photo-mosaic-item secondary">
+        <div className="photo-mosaic-item secondary" onClick={() => setGalleryOpen(true)}>
           <img src={galleryPhotos[1]} alt="Interior view" />
         </div>
-        <div className="photo-mosaic-item secondary">
+        <div className="photo-mosaic-item secondary" onClick={() => setGalleryOpen(true)}>
           <img src={galleryPhotos[2]} alt="Living area" />
         </div>
-        <div className="photo-mosaic-item secondary">
+        <div className="photo-mosaic-item secondary" onClick={() => setGalleryOpen(true)}>
           <img src={galleryPhotos[3]} alt="Kitchen amenities" />
         </div>
-        <div className="photo-mosaic-item secondary">
+        <div className="photo-mosaic-item secondary" onClick={() => setGalleryOpen(true)}>
           <img src={galleryPhotos[4]} alt="Outdoor view" />
         </div>
 
-        <button className="show-all-photos-btn" onClick={() => alert('Viewing all 5 high-resolution photos.')}>
+        <button className="show-all-photos-btn" onClick={() => setGalleryOpen(true)}>
           <i className="fa-solid fa-grip-vertical"></i>
-          <span>Show all photos</span>
+          <span>Show all 5 photos</span>
         </button>
       </div>
 
@@ -237,13 +307,14 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          {/* AirCover Banner */}
+          {/* WanderCover Protection Banner */}
           <div className="aircover-banner">
-            <div className="aircover-logo">
-              <span className="red">air</span>cover
+            <div className="aircover-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <i className="fa-solid fa-shield-halved" style={{ color: '#ff385c', fontSize: '1.25rem' }}></i>
+              <span><span className="red">wander</span>cover</span>
             </div>
             <p className="aircover-text">
-              Every booking includes free protection from Host cancellations, listing inaccuracies, and other issues like trouble checking in.
+              Every booking includes free protection from Host cancellations, listing inaccuracies, and other travel issues like trouble checking in.
             </p>
           </div>
 
@@ -275,7 +346,7 @@ export default function ListingDetailPage() {
                 <i className="fa-solid fa-pen-to-square"></i>
                 <span>Edit Listing</span>
               </Link>
-              <button onClick={handleDeleteListing} className="owner-btn-delete">
+              <button onClick={handleDeleteListingClick} className="owner-btn-delete">
                 <i className="fa-solid fa-trash"></i>
                 <span>Delete Listing</span>
               </button>
@@ -328,7 +399,7 @@ export default function ListingDetailPage() {
             {/* Reserve Button */}
             <button
               className="airbnb-reserve-btn"
-              onClick={() => alert(`Reservation confirmed for ${guests} guest(s) for ${nights} nights! Total: ₹${total.toLocaleString('en-IN')}`)}
+              onClick={handleReserve}
             >
               Reserve
             </button>
@@ -392,15 +463,33 @@ export default function ListingDetailPage() {
           {reviewError && <div className="auth-error-banner">{reviewError}</div>}
           <form onSubmit={handleReviewSubmit}>
             <div style={{ marginBottom: '0.85rem' }}>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.4rem' }}>
-                Overall Rating: {rating} {rating === 1 ? 'Star' : 'Stars'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <label style={{ fontWeight: 600, fontSize: '0.88rem', margin: 0 }}>
+                  Rating:
+                </label>
+                <span style={{ fontSize: '0.84rem', color: '#ff385c', fontWeight: 600 }}>
+                  {(() => {
+                    const current = hoverRating || rating;
+                    switch (current) {
+                      case 5: return '5 Stars - Outstanding! ✨';
+                      case 4: return '4 Stars - Very Good';
+                      case 3: return '3 Stars - Average';
+                      case 2: return '2 Stars - Below expectations';
+                      case 1: return '1 Star - Poor';
+                      default: return '';
+                    }
+                  })()}
+                </span>
+              </div>
               <div className="star-rating">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <i
                     key={s}
-                    className={s <= rating ? 'fa-solid fa-star' : 'fa-regular fa-star'}
+                    className={s <= (hoverRating || rating) ? 'fa-solid fa-star' : 'fa-regular fa-star'}
                     onClick={() => setRating(s)}
+                    onMouseEnter={() => setHoverRating(s)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    style={{ cursor: 'pointer', transition: 'transform 0.15s ease' }}
                   ></i>
                 ))}
               </div>
@@ -419,7 +508,14 @@ export default function ListingDetailPage() {
             </div>
 
             <button type="submit" className="airbnb-reserve-btn" style={{ padding: '0.75rem 1.5rem', display: 'inline-block' }} disabled={submittingReview}>
-              {submittingReview ? 'Submitting...' : 'Submit Review'}
+              {submittingReview ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+                  Submitting Review...
+                </>
+              ) : (
+                'Submit Review'
+              )}
             </button>
           </form>
         </div>
@@ -451,9 +547,10 @@ export default function ListingDetailPage() {
 
                   {isReviewOwner && (
                     <button
-                      onClick={() => handleDeleteReview(rev._id)}
-                      style={{ alignSelf: 'flex-start', color: '#c13515', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'underline' }}
+                      onClick={() => handleDeleteReviewClick(rev._id)}
+                      className="delete-review-link-btn"
                     >
+                      <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
                       Delete review
                     </button>
                   )}
@@ -479,6 +576,54 @@ export default function ListingDetailPage() {
           mapToken={mapToken}
         />
       </section>
+
+      {/* Interactive Modals */}
+      <ConfirmModal
+        isOpen={deleteListingModal}
+        onClose={() => setDeleteListingModal(false)}
+        onConfirm={confirmDeleteListing}
+        title="Remove this retreat from Wanderlust?"
+        message="Are you sure you want to permanently delete this property? It will be removed from traveler discovery, search results, and active wishlists."
+        confirmText="Yes, Remove Stay"
+        cancelText="Keep in Listings"
+        danger={true}
+        loading={deletingListing}
+      />
+
+      <ConfirmModal
+        isOpen={deleteReviewModal}
+        onClose={() => {
+          setDeleteReviewModal(false);
+          setSelectedReviewId(null);
+        }}
+        onConfirm={confirmDeleteReview}
+        title="Remove your traveler review?"
+        message="Are you sure you want to delete your review and ratings for this stay?"
+        confirmText="Yes, Remove Review"
+        cancelText="Cancel"
+        danger={true}
+        loading={deletingReview}
+      />
+
+      <PhotoGalleryModal
+        isOpen={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        photos={galleryPhotos}
+        title={listing.title}
+      />
+
+      <ReservationSuccessModal
+        isOpen={reservationOpen}
+        onClose={() => setReservationOpen(false)}
+        listing={listing}
+        guests={guests}
+        nights={nights}
+        subtotal={subtotal}
+        cleaningFee={cleaningFee}
+        serviceFee={serviceFee}
+        total={total}
+        onShare={handleShare}
+      />
     </div>
   );
 }

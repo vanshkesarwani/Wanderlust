@@ -1,6 +1,20 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Footer() {
+  const { user, openAuthModal } = useAuth();
+  const navigate = useNavigate();
+
+  const handleHostClick = (e) => {
+    e.preventDefault();
+    if (!user) {
+      openAuthModal('login', '/listings/new');
+    } else {
+      navigate('/listings/new');
+    }
+  };
+
   return (
     <footer className="airbnb-footer">
       <div className="footer-inner">
@@ -10,7 +24,7 @@ export default function Footer() {
             <h5>Support</h5>
             <ul>
               <li><a href="#help">Help Centre</a></li>
-              <li><a href="#aircover">AirCover</a></li>
+              <li><a href="#aircover">WanderCover Protection</a></li>
               <li><a href="#anti-discrimination">Anti-discrimination</a></li>
               <li><a href="#disability">Disability support</a></li>
               <li><a href="#cancellation">Cancellation options</a></li>
@@ -20,8 +34,16 @@ export default function Footer() {
           <div className="footer-col">
             <h5>Hosting</h5>
             <ul>
-              <li><a href="/listings/new">Airbnb your home</a></li>
-              <li><a href="#aircover-hosts">AirCover for Hosts</a></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={handleHostClick}
+                  style={{ color: 'inherit', font: 'inherit', textAlign: 'left', padding: 0, background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Host your home
+                </button>
+              </li>
+              <li><a href="#aircover-hosts">WanderCover for Hosts</a></li>
               <li><a href="#hosting-resources">Hosting resources</a></li>
               <li><a href="#community-forum">Community forum</a></li>
               <li><a href="#hosting-responsibly">Hosting responsibly</a></li>

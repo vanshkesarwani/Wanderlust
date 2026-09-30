@@ -104,6 +104,22 @@ export default function ListingsPage({ searchQuery }) {
         onOpenFilterModal={() => setFilterModalOpen(true)}
       />
 
+      {/* Wanderlust Travel Status & Explore Ribbon */}
+      <div className="wanderlust-explore-ribbon">
+        <div className="container ribbon-inner">
+          <div className="ribbon-brand-lead">
+            <span className="ribbon-compass-icon"><i className="fa-solid fa-compass"></i></span>
+            <span className="ribbon-text">
+              Over <strong>{listings.length || '1,000+'}</strong> verified retreats across the world's most breathtaking destinations
+            </span>
+          </div>
+          <div className="ribbon-perks">
+            <span className="ribbon-perk-item"><i className="fa-solid fa-shield-halved"></i> 100% Verified Hosts</span>
+            <span className="ribbon-perk-item"><i className="fa-solid fa-bolt"></i> Instant Confirmation</span>
+          </div>
+        </div>
+      </div>
+
       <div className="container" style={{ paddingBottom: '4rem' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '5rem 1rem' }}>
@@ -147,15 +163,40 @@ export default function ListingsPage({ searchQuery }) {
             </button>
           </div>
         ) : (
-          <div className="airbnb-listings-grid">
-            {filteredListings.map((listing) => (
-              <ListingCard
-                key={listing._id}
-                listing={listing}
-                showTaxes={showTaxes}
-              />
-            ))}
-          </div>
+          <>
+            {(searchQuery || urlSearch || selectedCategory !== 'all' || minPrice || maxPrice) && (
+              <div className="search-results-feedback-row">
+                <span className="results-count-text">
+                  <strong>{filteredListings.length}</strong> {filteredListings.length === 1 ? 'place' : 'places'} found
+                  {selectedCategory !== 'all' && ` in ${selectedCategory}`}
+                  {(searchQuery || urlSearch) && ` matching "${searchQuery || urlSearch}"`}
+                </span>
+                <button
+                  className="clear-search-pill-btn"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setMinPrice('');
+                    setMaxPrice('');
+                    window.history.pushState({}, '', '/');
+                    fetchListings();
+                  }}
+                >
+                  <i className="fa-solid fa-rotate-left"></i> Reset
+                </button>
+              </div>
+            )}
+
+            <div className="airbnb-listings-grid">
+              {filteredListings.map((listing, index) => (
+                <ListingCard
+                  key={listing._id}
+                  listing={listing}
+                  showTaxes={showTaxes}
+                  isNewListing={index === 0}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 

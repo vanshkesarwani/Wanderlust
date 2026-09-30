@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function EditListingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -94,9 +96,12 @@ export default function EditListingPage() {
         });
       }
 
+      toast.updated(title);
       navigate(`/listings/${id}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update listing');
+      const msg = err.response?.data?.error || 'Failed to update listing';
+      setError(msg);
+      toast.error(msg, 'Update Failed');
     } finally {
       setSubmitting(false);
     }
@@ -115,8 +120,12 @@ export default function EditListingPage() {
     <div className="container main-content">
       <div className="form-container">
         <div className="form-header">
-          <h2>Edit Your Listing</h2>
-          <p>Update property information, pricing, or photos.</p>
+          <div className="hosting-studio-brand">
+            <i className="fa-solid fa-compass" style={{ color: '#ff385c', marginRight: '6px' }}></i>
+            <span>WANDERLUST HOSTING STUDIO</span>
+          </div>
+          <h2>Edit Your Retreat</h2>
+          <p>Keep your property details, pricing, and scenic photos up to date for travelers.</p>
         </div>
 
         {error && <div className="auth-error-banner">{error}</div>}

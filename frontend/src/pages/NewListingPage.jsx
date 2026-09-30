@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function NewListingPage() {
   const navigate = useNavigate();
   const { user, openAuthModal } = useAuth();
+  const toast = useToast();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -19,17 +21,65 @@ export default function NewListingPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If user is not logged in
+  // If user is not logged in - Authentic Airbnb Hosting Landing Screen
   if (!user) {
     return (
-      <div className="container main-content" style={{ textAlign: 'center', padding: '5rem 0' }}>
-        <h2>Sign in to list your home</h2>
-        <p style={{ color: '#717171', margin: '1rem 0 1.5rem 0' }}>
-          You need to be logged into your Wanderlust account to host.
-        </p>
-        <button onClick={() => openAuthModal('login')} className="primary-btn">
-          Log In / Sign Up
-        </button>
+      <div className="container main-content" style={{ maxWidth: '960px', margin: '0 auto', padding: '3.5rem 1.25rem 5rem 1.25rem' }}>
+        {/* Hero Section */}
+        <div className="airbnb-host-hero-card">
+          <div className="airbnb-host-hero-badge">
+            <i className="fa-solid fa-house-chimney-window"></i>
+            <span>WANDERLUST HOSTING</span>
+          </div>
+          <h1 className="airbnb-host-hero-title">
+            It's easy to host your home on Wanderlust.
+          </h1>
+          <p className="airbnb-host-hero-sub">
+            Open your doors to curious travelers, earn extra income, and share your corner of the world with ease.
+          </p>
+          <div style={{ marginTop: '2rem' }}>
+            <button
+              onClick={() => openAuthModal('login', '/listings/new')}
+              className="primary-btn airbnb-host-cta-btn"
+            >
+              <i className="fa-solid fa-arrow-right-to-bracket" style={{ marginRight: '8px' }}></i>
+              Get Started &mdash; Sign In / Register
+            </button>
+          </div>
+        </div>
+
+        {/* 3 Airbnb Value Propositions */}
+        <div className="airbnb-host-pillars-grid">
+          <div className="host-pillar-card">
+            <div className="pillar-icon-wrap">
+              <i className="fa-solid fa-user-group"></i>
+            </div>
+            <h4>One-to-one guidance from a Superhost</h4>
+            <p>
+              We'll match you with a seasoned Superhost in your region who can guide you from your very first question to your very first guest.
+            </p>
+          </div>
+
+          <div className="host-pillar-card">
+            <div className="pillar-icon-wrap">
+              <i className="fa-solid fa-star"></i>
+            </div>
+            <h4>Experienced guests for your first booking</h4>
+            <p>
+              For your very first reservation, you can choose to welcome an experienced guest with at least 3 stays and great reviews.
+            </p>
+          </div>
+
+          <div className="host-pillar-card">
+            <div className="pillar-icon-wrap">
+              <i className="fa-solid fa-shield-halved"></i>
+            </div>
+            <h4>Top-to-bottom WanderCover protection</h4>
+            <p>
+              Always included, always free. Get comprehensive damage protection, guest verification, and 24-hour safety support.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -88,13 +138,16 @@ export default function NewListingPage() {
       }
 
       const createdId = res.data.listing?._id;
+      toast.listed(title);
       if (createdId) {
-        navigate(`/listings/${createdId}`);
+        navigate(`/listings/${createdId}`, { state: { justCreated: true } });
       } else {
-        navigate('/');
+        navigate('/', { state: { justCreated: true } });
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create listing');
+      const errMsg = err.response?.data?.error || 'Failed to create listing';
+      setError(errMsg);
+      toast.error(errMsg, 'Listing Creation Failed');
     } finally {
       setLoading(false);
     }
@@ -104,31 +157,59 @@ export default function NewListingPage() {
     <div className="container main-content">
       <div className="form-container">
         <div className="form-header">
-          <h2>Create a New Listing</h2>
-          <p>Share your property with millions of travelers around the world.</p>
+          <div className="hosting-studio-brand">
+            <i className="fa-solid fa-compass" style={{ color: '#ff385c', marginRight: '6px' }}></i>
+            <span>WANDERLUST HOSTING STUDIO</span>
+          </div>
+          <h2>List Your Property</h2>
+          <p>Open your doors to millions of travelers seeking unforgettable retreats worldwide.</p>
         </div>
 
         {error && <div className="auth-error-banner">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Property Title</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <label style={{ margin: 0 }}>Property Title</label>
+              <span style={{ fontSize: '0.78rem', color: '#717171' }}>Be descriptive & catchy</span>
+            </div>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Cozy Beachfront Villa with Ocean Views"
+              placeholder="e.g. Serene Beachfront Villa with Panoramic Ocean Views"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+
+            {/* Quick Inspiration Travel Pills */}
+            <div className="inspiration-pills-row">
+              <span className="inspiration-label">Quick Ideas:</span>
+              {[
+                { tag: 'Beachfront Villa', icon: '🏖️' },
+                { tag: 'Cozy Mountain Cabin', icon: '🏔️' },
+                { tag: 'Luxury Penthouse', icon: '👑' },
+                { tag: 'Countryside Farmstay', icon: '🌻' },
+                { tag: 'Modern Forest Haven', icon: '🌲' }
+              ].map((item) => (
+                <button
+                  type="button"
+                  key={item.tag}
+                  className="inspiration-pill-btn"
+                  onClick={() => setTitle(`${item.icon} ${item.tag} in ${location || 'Paradise'}`)}
+                >
+                  {item.icon} {item.tag}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="form-group">
-            <label>Description</label>
+            <label>Description & Amenities</label>
             <textarea
               className="form-control"
               rows="4"
-              placeholder="Describe what makes your space special, nearby attractions, and comfort..."
+              placeholder="Describe what makes your retreat magical, scenic highlights, nearby adventures, and guest comforts..."
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -209,13 +290,67 @@ export default function NewListingPage() {
             />
           </div>
 
+          {/* Live Interactive Card Preview */}
+          {(title || price || location || imagePreview) && (
+            <div className="new-listing-live-preview-box">
+              <div className="live-preview-header">
+                <span className="live-pulse-dot"></span>
+                <span>Live Card Preview (How guests see it)</span>
+              </div>
+              <div className="airbnb-card live-card-mock">
+                <div className="airbnb-card-media">
+                  <img
+                    src={imagePreview || 'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b'}
+                    alt="Preview"
+                  />
+                  <div className="guest-fav-badge" style={{ background: '#ff385c', color: '#fff' }}>
+                    <i className="fa-solid fa-sparkles" style={{ fontSize: '0.7rem' }}></i>
+                    <span>New Listing</span>
+                  </div>
+                </div>
+                <div className="airbnb-card-content">
+                  <div className="airbnb-card-row-top">
+                    <span className="airbnb-card-location">
+                      {location || 'Location'}, {country || 'Country'}
+                    </span>
+                    <div className="airbnb-card-rating">
+                      <i className="fa-solid fa-star"></i>
+                      <span>New</span>
+                    </div>
+                  </div>
+                  <div className="airbnb-card-sub">
+                    {title || 'Property Title'}
+                  </div>
+                  <div className="airbnb-card-dates">
+                    Stay with Host {user?.username || 'You'} &bull; Available now
+                  </div>
+                  <div className="airbnb-card-price-row">
+                    <div>
+                      <span className="price-bold">
+                        &#8377; {price ? Number(price).toLocaleString('en-IN') : '0'}
+                      </span>{' '}
+                      <span className="price-unit">night</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
             className="primary-btn"
-            style={{ width: '100%', marginTop: '1rem' }}
+            style={{ width: '100%', marginTop: '1.25rem', height: '48px', fontSize: '1rem', fontWeight: 600 }}
             disabled={loading}
           >
-            {loading ? 'Creating Listing...' : 'Publish Listing'}
+            {loading ? (
+              <>
+                <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                Publishing Your Stay...
+              </>
+            ) : (
+              '🚀 Publish Listing'
+            )}
           </button>
         </form>
       </div>
