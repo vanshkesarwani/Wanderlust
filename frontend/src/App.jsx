@@ -23,7 +23,7 @@ export default function App() {
 
             <main style={{ flex: 1 }}>
               <Routes>
-                <Route path="/" element={<ListingsPage searchQuery={searchQuery} />} />
+                <Route path="/" element={<ListingsPage searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="/listings" element={<Navigate to="/" replace />} />
                 <Route path="/listings/new" element={<NewListingPage />} />
                 <Route path="/listings/:id" element={<ListingDetailPage />} />

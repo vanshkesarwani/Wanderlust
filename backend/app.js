@@ -42,24 +42,27 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// CORS Middleware (handles credentials & preflight requests for React frontend)
+// CORS Middleware (handles credentials & preflight requests for React frontend across all devices)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
   next();
 });
 
-// Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Parsers (with generous 15mb limits for mobile photos & forms)
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 // Mongo Session Store
 const store = MongoStore.create({
@@ -85,7 +88,7 @@ const sessionOptions = {
     expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: isProd ? "none" : "lax",
     secure: isProd,
   },
 };
@@ -129,8 +132,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 8080;
 // Only start listening when not running inside a serverless platform (Vercel)
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server listening on port ${PORT} (0.0.0.0)`);
   });
 }
 

@@ -4,14 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 const POPULAR_DESTINATIONS = [
-  { label: 'Goa', icon: 'fa-solid fa-umbrella-beach' },
   { label: 'Malibu', icon: 'fa-solid fa-water' },
-  { label: 'Paris', icon: 'fa-solid fa-landmark' },
-  { label: 'New York', icon: 'fa-solid fa-city' },
-  { label: 'Aspen', icon: 'fa-solid fa-person-skiing' },
+  { label: 'Mumbai', icon: 'fa-solid fa-city' },
+  { label: 'New York', icon: 'fa-solid fa-building' },
   { label: 'Florence', icon: 'fa-solid fa-palette' },
-  { label: 'Tokyo', icon: 'fa-solid fa-torii-gate' },
-  { label: 'Bali', icon: 'fa-solid fa-sun' }
+  { label: 'Aspen', icon: 'fa-solid fa-person-skiing' },
+  { label: 'Cancun', icon: 'fa-solid fa-umbrella-beach' },
+  { label: 'Los Angeles', icon: 'fa-solid fa-sun' },
+  { label: 'Lake Tahoe', icon: 'fa-solid fa-mountain' }
 ];
 
 const REGIONS = [
@@ -32,8 +32,20 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+  const desktopSearchInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Sync searchQuery state whenever URL search parameters change
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get('search');
+    if (searchParam !== null) {
+      setSearchQuery(searchParam);
+    } else if (location.pathname === '/' && !location.search) {
+      setSearchQuery('');
+    }
+  }, [location.search, location.pathname, setSearchQuery]);
 
   // Close menus on outside click or touch
   useEffect(() => {
@@ -66,31 +78,47 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Auto focus mobile search input when opened
+  // Auto focus search inputs when search drawer opens
   useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
+    if (searchOpen) {
       setTimeout(() => {
         searchInputRef.current?.focus();
-      }, 150);
+        desktopSearchInputRef.current?.focus();
+      }, 120);
     }
   }, [searchOpen]);
 
   const handleSearchSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setSearchOpen(false);
-    navigate(`/?search=${encodeURIComponent(searchQuery || '')}`);
+    const trimmed = (searchQuery || '').trim();
+    if (trimmed) {
+      navigate(`/?search=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleDestinationClick = (dest) => {
-    setSearchQuery(dest);
+    const trimmed = (dest || '').trim();
+    setSearchQuery(trimmed);
     setSearchOpen(false);
-    navigate(`/?search=${encodeURIComponent(dest)}`);
+    if (trimmed) {
+      navigate(`/?search=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleRegionClick = (region) => {
-    setSearchQuery(region);
+    const trimmed = (region || '').trim();
+    setSearchQuery(trimmed);
     setSearchOpen(false);
-    navigate(`/?search=${encodeURIComponent(region)}`);
+    if (trimmed) {
+      navigate(`/?search=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleHostClick = (e) => {
@@ -238,11 +266,11 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
                       Where to?
                     </label>
                     <input
+                      ref={desktopSearchInputRef}
                       type="text"
                       className="airbnb-input"
                       style={{ marginTop: '0.45rem' }}
-                      placeholder="Search destinations (e.g. Goa, Malibu, Italy, New York)"
-                      autoFocus
+                      placeholder="Search destinations (e.g. Mumbai, Malibu, New York, Florence)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />

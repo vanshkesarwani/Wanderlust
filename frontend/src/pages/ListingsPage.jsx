@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import CategoryFilter from '../components/CategoryFilter';
 import ListingCard from '../components/ListingCard';
 import FilterModal from '../components/FilterModal';
 
-export default function ListingsPage({ searchQuery }) {
+export default function ListingsPage({ searchQuery, setSearchQuery }) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const urlSearch = searchParams.get('search') || '';
 
   const [listings, setListings] = useState([]);
@@ -38,15 +39,22 @@ export default function ListingsPage({ searchQuery }) {
     }
   };
 
-  // Comprehensive client-side category and price filtering
+  const handleResetFilters = () => {
+    setSelectedCategory('all');
+    setMinPrice('');
+    setMaxPrice('');
+    if (setSearchQuery) setSearchQuery('');
+    navigate('/');
+  };
+
+  // Comprehensive client-side category and price filtering with multi-token search
   const filteredListings = listings.filter((item) => {
-    const activeSearch = (searchQuery || urlSearch).toLowerCase();
+    const activeSearch = (urlSearch || searchQuery || '').trim().toLowerCase();
     if (activeSearch) {
-      const matchSearch =
-        item.title?.toLowerCase().includes(activeSearch) ||
-        item.location?.toLowerCase().includes(activeSearch) ||
-        item.country?.toLowerCase().includes(activeSearch);
-      if (!matchSearch) return false;
+      const terms = activeSearch.split(/[,\s]+/).filter(Boolean);
+      const combined = `${item.title || ''} ${item.location || ''} ${item.country || ''} ${item.description || ''}`.toLowerCase();
+      const allMatch = terms.every((term) => combined.includes(term));
+      if (!allMatch) return false;
     }
 
     if (minPrice && item.price < Number(minPrice)) return false;
@@ -149,13 +157,7 @@ export default function ListingsPage({ searchQuery }) {
               Try changing or clearing some of your filters or searching for another destination.
             </p>
             <button
-              onClick={() => {
-                setSelectedCategory('all');
-                setMinPrice('');
-                setMaxPrice('');
-                window.history.pushState({}, '', '/');
-                fetchListings();
-              }}
+              onClick={handleResetFilters}
               className="airbnb-filters-pill"
               style={{ margin: '0 auto' }}
             >
@@ -173,13 +175,7 @@ export default function ListingsPage({ searchQuery }) {
                 </span>
                 <button
                   className="clear-search-pill-btn"
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setMinPrice('');
-                    setMaxPrice('');
-                    window.history.pushState({}, '', '/');
-                    fetchListings();
-                  }}
+                  onClick={handleResetFilters}
                 >
                   <i className="fa-solid fa-rotate-left"></i> Reset
                 </button>

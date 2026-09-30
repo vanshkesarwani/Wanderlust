@@ -102,14 +102,45 @@ router.get("/listings", wrapAsync(async (req, res) => {
     const { category, search } = req.query;
     let query = {};
 
-    if (search) {
-        query = {
-            $or: [
-                { title: { $regex: search, $options: "i" } },
-                { location: { $regex: search, $options: "i" } },
-                { country: { $regex: search, $options: "i" } },
-            ]
-        };
+    if (search && search.trim()) {
+        const escapeRegex = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+        const cleanSearch = search.trim();
+        const rawTerms = cleanSearch.split(/[,\s]+/).filter(Boolean);
+        const fullEscaped = escapeRegex(cleanSearch);
+
+        if (rawTerms.length <= 1) {
+            query = {
+                $or: [
+                    { title: { $regex: fullEscaped, $options: "i" } },
+                    { location: { $regex: fullEscaped, $options: "i" } },
+                    { country: { $regex: fullEscaped, $options: "i" } },
+                    { description: { $regex: fullEscaped, $options: "i" } },
+                ]
+            };
+        } else {
+            // Multi-token search (e.g. "Goa, India", "Beach villa", "Malibu US")
+            const tokenConditions = rawTerms.map((term) => {
+                const safeTerm = escapeRegex(term);
+                return {
+                    $or: [
+                        { title: { $regex: safeTerm, $options: "i" } },
+                        { location: { $regex: safeTerm, $options: "i" } },
+                        { country: { $regex: safeTerm, $options: "i" } },
+                        { description: { $regex: safeTerm, $options: "i" } },
+                    ]
+                };
+            });
+
+            query = {
+                $or: [
+                    { title: { $regex: fullEscaped, $options: "i" } },
+                    { location: { $regex: fullEscaped, $options: "i" } },
+                    { country: { $regex: fullEscaped, $options: "i" } },
+                    { description: { $regex: fullEscaped, $options: "i" } },
+                    { $and: tokenConditions }
+                ]
+            };
+        }
     }
 
     const listings = await Listing.find(query).sort({ _id: -1 });
